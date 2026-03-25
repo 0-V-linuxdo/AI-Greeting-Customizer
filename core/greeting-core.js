@@ -4,7 +4,8 @@
 // @namespace    https://github.com/0-V-linuxdo/Greeting-Customizer
 // @description  Shared core library for Greeting Customizer scripts. Not used standalone — @require this in site-specific scripts.
 // @description:zh-CN  问候语自定义脚本的通用核心库。不单独使用，在各网站脚本中通过 @require 引入。
-// @version      1.0.0
+// @version      1.0.1
+// @update-log   v1.0.1 将事件监听(click, contextmenu)改为全局事件委托(window.addEventListener)，解决复杂 SPA 网站动态重建 DOM 导致事件失效的问题；
 // @license      MIT
 // ==/UserScript==
 
@@ -478,12 +479,14 @@ var GreetingCustomizer = (function () {
             if (greetings.length <= 1) return;
             if (!isHome()) return;
 
-            const h1 = document.querySelector(SELECTOR_H1);
-            if (!h1) return;
-            if (h1.dataset.gcBound === '1') return;
+            if (window._gcManualClickBound) return;
+            window._gcManualClickBound = true;
 
-            h1.dataset.gcBound = '1';
-            h1.addEventListener('click', () => {
+            window.addEventListener('click', (e) => {
+                if (!isHome()) return;
+                const h1 = e.target.closest(SELECTOR_H1);
+                if (!h1) return;
+
                 const sel = window.getSelection && window.getSelection();
                 if (sel && String(sel).trim()) return;
                 applyGreeting(true);
@@ -493,16 +496,17 @@ var GreetingCustomizer = (function () {
         function bindRightDoubleClickOpenIfNeeded() {
             if (!isHome()) return;
 
-            const h1 = document.querySelector(SELECTOR_H1);
-            if (!h1) return;
-            if (h1.dataset.gcRightDblBound === '1') return;
-
-            h1.dataset.gcRightDblBound = '1';
+            if (window._gcRightDblBound) return;
+            window._gcRightDblBound = true;
 
             let lastRightClickAt = 0;
             const dblClickGapMs = 400;
 
-            h1.addEventListener('contextmenu', (e) => {
+            window.addEventListener('contextmenu', (e) => {
+                if (!isHome()) return;
+                const h1 = e.target.closest(SELECTOR_H1);
+                if (!h1) return;
+
                 e.preventDefault();
                 e.stopPropagation();
 
